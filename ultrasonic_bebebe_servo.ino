@@ -1,12 +1,18 @@
+//working version
+//1. not attack when the bebebe is been mutex
+//2. up/down is control servo
+//3. BE~~mode is not good. It will bebebe when no thing is in front of my ultrasonic.
+
 #include "IRremote.h"
 #include <Servo.h>
+
 
 int receiver = 11; // Signal Pin of IR receiver to Arduino Digital Pin 11
 IRrecv irrecv(receiver);           // create instance of 'irrecv'
 decode_results results;            // create instance of 'decode_results'
 
 Servo servo_triggor;
-int current_angle = 90;
+int current_angle = 0;
 
 #define TrigPin 2
 #define EchoPin 3
@@ -17,6 +23,16 @@ bool b_bebebe = true;
 int MODE_BEBE = 1; 
 #define UPPER_BOUND 179
 #define LOWER_BOUND 0
+int count_shoot = 0;
+
+void shoot()
+{
+      servo_triggor.write( 0 );
+      servo_triggor.write( 179 );      
+      delay(3000);
+      servo_triggor.write( 0 );
+      count_shoot = 0;
+}
 
 void add_delta_degree_to_servo(int delta_degree)
 {
@@ -46,12 +62,13 @@ void be()
 }
 
 void bebebe(float sound_distance)
-{    
-  Serial.print((int)Value_cm);
-  Serial.println("cm");
+{ 
+  //Serial.print((int)Value_cm);
+  //Serial.println("cm");
   if(sound_distance > DETECT_DISTANCE)
   {
     digitalWrite(spk, 0);
+    count_shoot = 0;
     return;
   }
   else
@@ -68,7 +85,15 @@ void bebebe(float sound_distance)
     else
     {//BE~~~~~~~~~~
       digitalWrite(spk, 1);
+      count_shoot ++;
+      if(count_shoot == 50)
+      {
+        shoot();
+      }
+
     }
+      Serial.println(count_shoot);
+
   }
 }
 
@@ -83,6 +108,7 @@ void setup()
   irrecv.enableIRIn(); // Start the receiver
 
   servo_triggor.attach(9); // attach 9 to servo_triggor
+  servo_triggor.write( current_angle );
 }
 
 void loop()
@@ -107,49 +133,64 @@ void loop()
     irrecv.resume(); // receive the next value
   }
 }
+String hex_current_cmd;
+String hex_previous_cmd;
 
 void translateIR() // takes action based on IR code received
 // describing Remote IR codes 
 {
-  Serial.println(results.value, HEX);
+  Serial.println(results.value, HEX);      
+  hex_current_cmd = String(results.value);
   
-  if(results.value == 0x530ACF)
+  if(hex_current_cmd == String(0xFFFFFFFF) )
+  {
+    hex_current_cmd = hex_previous_cmd;
+  }
+  
+  if(hex_current_cmd == String(0x530ACF) )
   {
     DETECT_DISTANCE += 10;    
     be();
+    
   }
   
-  if(results.value == 0x510AEF)
+  if(hex_current_cmd ==  String(0x510AEF) )
   {
     DETECT_DISTANCE -= 10;    
     be();
   }
   
-  if(results.value == 0x511AEE)
+  if(hex_current_cmd ==  String(0x511AEE) )
   {
     b_bebebe=true;    
     MODE_BEBE++;    
     be();
   }
   
-  if(results.value == 0x500AFF)
+  if(hex_current_cmd ==  String(0x500AFF) )
   {
     b_bebebe=false;    
     be();
   }
+  
+  if(hex_current_cmd ==  String(0x524ADB) )
+  {
+    add_delta_degree_to_servo(10);   
+    be();
+  }
+  
+  if(hex_current_cmd ==  String(0x504AFB) )
+  {
+    add_delta_degree_to_servo(-10);   
+    be();
+  }
+  
+  hex_previous_cmd = hex_current_cmd;
 
   /*
-  if(results.value == 0x500AFF)
-  {
-    add_delta_degree_to_servo(1);   
-    be();
-  }
 
-  if(results.value == 0x500AFF)
-  {
-    add_delta_degree_to_servo(-1);   
-    be();
-  }
+
+ 
 
   if(results.value == 0x500AFF)
   {
@@ -196,4 +237,3 @@ void translateIR() // takes action based on IR code received
   */
   delay(50); // Do not get immediate repeat
 } //END translateIR
-
