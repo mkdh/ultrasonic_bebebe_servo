@@ -4,6 +4,7 @@
 //3. BE~~mode is not good. It will bebebe when no thing is in front of my ultrasonic.
 // close anti-virs when can't change some file , ex:  rename core/core.a
 
+
 #include "IRremote.h"
 #include <Servo.h>
 
@@ -12,7 +13,7 @@ IRrecv irrecv(receiver);           // create instance of 'irrecv'
 decode_results results;            // create instance of 'decode_results'
 
 Servo servo_triggor;
-int current_angle = 0;
+int current_angle = 90;
 
 
 #define TrigPin 2
@@ -42,10 +43,9 @@ void test_shoot_time()
 
 void shoot()
 {
-      servo_triggor.write( 0 );
-      servo_triggor.write( 179 );      
-      delay(3000);
-      servo_triggor.write( 0 );
+      servo_triggor.write( 170 );      
+      delay(300);
+      servo_triggor.write( current_angle );
       count_shoot = 0;
 }
 
@@ -204,14 +204,45 @@ void translateIR() // takes action based on IR code received
     DETECT_DISTANCE -= 10;    
     be();
   }
-  
+
+  //change be mode
   if(hex_current_cmd ==  String(0x511AEE) )
   {
     b_bebebe = true;    
     MODE_BEBE++;    
     be();
   }
+
+  //keyes - shoot mode
+  if(hex_current_cmd ==  String(0xFFB04F) )
+  {
+    b_bebebe = true;    
+    MODE_BEBE = 2;    
+    be();
+  }
   
+  //keyes - shoot mode
+  if(hex_current_cmd ==  String(0xFF9867) )
+  {
+    b_bebebe = true;    
+    MODE_BEBE = 1;    
+    be();
+  }
+  //keyes - mute mode
+  if(hex_current_cmd ==  String(0xFF6897) )
+  {
+    b_bebebe = false;    
+    be();  
+  }
+  
+  //keyes -
+  //FFC23D - right
+
+
+  
+  //keyes -
+  //FF22DD -left
+
   if(hex_current_cmd ==  String(0x500AFF) )
   {
     b_bebebe = false;    
